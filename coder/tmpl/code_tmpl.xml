@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tmpls>
+    <tmpl name="class_interface">
+        <code>
+            <![CDATA[
+            	package $F{pck};
+	            /* 
+				 * Copyright (c) 2015, S.F. Express Inc. All rights reserved.
+				 */
+				
+				public interface $F{classNameInterface} {
+				
+				}
+	    	]]>
+        </code>
+	</tmpl>
+	
+    <tmpl name="class_implement">
+        <code>
+            <![CDATA[
+            	package $F{pck};
+	            /* 
+				 * Copyright (c) 2015, S.F. Express Inc. All rights reserved.
+				 */
+				@Component
+				public class $F{className} implements $F{classNameInterface}{
+				
+					private static final Logger logger = Logger.getLogger($F{className}.class);
+					
+					@Autowired
+					private JdbcTemplate jdbcTemplate;
+				}
+	    	]]>
+        </code>
+	</tmpl>
+    
+    <tmpl name="query_session_multiResult">
+        <code>
+            <![CDATA[
+				public List<$F{className}> find$F{className}s ($F{inputArgs}) {
+				    [validateNull:null]
+				    
+				    logger.debug("input params " + $F{inputArgsValue});
+				    Session session = sessionFactory.openSession();
+				    
+				    List<$F{className}> result = session.doReturningWork(connection -> {
+			    		PreparedStatement pstmt = null;
+			            ResultSet rs = null;
+			            try {
+			                String sql = Config.getSQL("bill_header");
+			                logger.debug("query sql = " + sql);
+			                
+			                pstmt = connection.prepareStatement(sql);
+			                [pstmtSet]    
+			                
+			                List<$F{className}> list = new ArrayList<$F{className}>();
+			                rs = pstmt.executeQuery();
+			                while(rs.next()) {
+			                	[wrapRs]
+			                    list.add($F{entityName});
+			                }
+			            } catch(SQLException e) {
+			                logger.error("", e);
+			                e.printStackTrace();
+			            } finally {
+			                SQLUtils.closeRs(rs);
+			                SQLUtils.closeStmt(pstmt);
+			                SQLUtils.closeConnection(connection);
+			                session.close();
+			            }
+			            
+			            return null;
+				    });
+				    
+				    logger.info("query result is " + (result == null ? "null" : "size()=" + result.size()));
+				    return result;
+				}
+	    	]]>
+        </code>
+	</tmpl>
+	
+    <tmpl name="query_jdbcTemplate_multiResult">
+        <code>
+            <![CDATA[
+				public List<$F{className}> find$F{className}s ($F{inputArgs}) {
+				    [validateNull:null]
+				    
+				    logger.debug("input params " + $F{inputArgsValue});
+				    
+				    String sql = Config.getSQL("bill_header");
+			        Object[] args = new Object[]{
+			                [fillCriteria]
+			        };
+			        logger.debug("sql=" + sql + ", args = " + Arrays.toString(args));
+			        
+	                List<$F{className}> result = jdbcTemplate.query(sql, args, (rs, index) -> {
+			        	[wrapRs]
+			        	return $F{entityName};
+			        });
+			        
+				    logger.info("query result is " + (result == null ? "null" : "size()=" + result.size()));
+				    return result;
+				}
+	    	]]>
+        </code>
+	</tmpl>
+	
+    <tmpl name="update_jdbcTemplate">
+        <code>
+            <![CDATA[
+				public int update$F{className} ($F{inputArgs}) {
+				    [validateNull:0]
+				    
+				    logger.debug("input params " + $F{inputArgsValue});
+				    
+				    [updateSql]
+			        logger.debug("sql=" + sql + ", args = " + Arrays.toString(args));
+		            
+		            int result = jdbcTemplate.update(sql, args);
+		            logger.info("update effect item number " + result);
+		            return result;
+				}
+	    	]]>
+        </code>
+	</tmpl>
+    
+</tmpls>
